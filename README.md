@@ -1,71 +1,82 @@
-# Firewall & Packet Sniffer
-
-A lightweight Python-based **Firewall & Packet Sniffer** that allows users to block specific websites, IP addresses, and ports using **WinDivert**. The program efficiently captures and filters network packets in real-time with multi-threading for better performance.
-
-## Features 🚀
-- **Packet Filtering:** Block websites and specific ports (e.g., HTTP & HTTPS traffic).
-- **IP and Hostname Resolution:** Convert hostnames to IPs and vice versa.
-- **Multi-threading for Efficiency:** Faster execution with separate threads for capturing and processing packets.
-- **Graceful Exit:** Press `Ctrl+C` to stop the program cleanly.
+Here's an updated **README** for your project:  
 
 ---
-## Installation 🛠
 
-### Prerequisites
-- **Windows OS** (Required for WinDivert)
-- **Python 3.9+** (Recommended for compatibility)
-- **WinDivert** (Windows packet capture & modification tool)
+## **🛡️ Custom Firewall & Packet Sniffer**
+A simple Python-based **firewall and packet sniffer** using **WinDivert** that allows you to:  
+✅ **Block specific IPs**  
+✅ **Block specific ports** (e.g., HTTP, HTTPS, etc.)  
+✅ **Block websites** (by resolving them to IP addresses)  
+✅ **Monitor network traffic**  
 
-### Install Dependencies
-1. **Install Python Packages**
+---
+
+## **🚀 Features**
+✔ **Customizable Filtering** – Choose which IPs, ports, or websites to block  
+✔ **Multiple Input Support** – Enter values as **comma-separated lists**  
+✔ **Multithreading** – Improves performance and reduces packet drops  
+✔ **Graceful Exit** – Press `Ctrl+C` to stop the firewall cleanly  
+
+---
+
+## **⚙️ Requirements**
+### **🔹 Install Dependencies**
+1. Install **Python 3.9+** (Recommended)
+2. Install required modules:
    ```bash
    pip install pydivert
    ```
-2. **Download WinDivert**
-   - Download `WinDivert` from [here](https://reqrypt.org/windivert.html)
-   - Extract and copy `WinDivert64.sys` and `WinDivert64.dll` to your project folder.
+3. **Download and Install WinDivert**:  
+   - Get it from: [WinDivert Download](https://reqrypt.org/windivert.html)  
+   - Extract the files  
+   - Place `WinDivert64.sys` and `WinDivert64.dll` in the same directory as your script  
 
 ---
-## Usage 📌
 
-1. **Run the Script**
+## **📝 How to Use**
+1. **Run the script**:  
    ```bash
    python firewall.py
    ```
-2. **Enter the website to block**
-   ```
-   Enter the Website you want to block: example.com
-   ```
-3. **Firewall starts filtering packets in real-time**
-   ```
-   example.com's IP: 93.184.216.34 will be blocked
-   Blocked: 192.168.1.5:52345 -> 93.184.216.34:80 (Hostname: example.com)
-   ```
-4. **Press `Ctrl+C` to stop the program.**
+2. **Choose what to block**  
+   - Enter **IP addresses** (comma-separated)  
+   - Enter **Ports** (comma-separated, e.g., `80,443,22`)  
+   - Enter **Websites** (comma-separated, e.g., `example.com, google.com`)  
+3. The firewall will now **monitor and block** selected IPs, ports, and websites.
+
+### **🎯 Example Input**
+```
+Enter IP addresses to block (comma-separated, leave empty to skip): 192.168.1.100, 192.168.1.101
+Enter Ports to block (comma-separated, leave empty to skip): 80, 443
+Enter Websites to block (comma-separated, leave empty to skip): facebook.com, youtube.com
+```
+**Output:**  
+```
+Blocking facebook.com (157.240.22.35)
+Blocking youtube.com (142.250.180.206)
+Active Filter: (ip.DstAddr == 192.168.1.100 or ip.DstAddr == 192.168.1.101 or tcp.DstPort == 80 or tcp.DstPort == 443)
+Blocked: 192.168.1.50:54123 -> 142.250.180.206:443 (Hostname: youtube.com)
+Blocked: 192.168.1.50:54124 -> 157.240.22.35:443 (Hostname: facebook.com)
+```
 
 ---
-## Troubleshooting & FAQs ❓
 
-### "WinError 87: The parameter is incorrect"
-- Ensure **WinDivert is properly installed**.
-- Restart your system and try running the script again.
-
-### "Ctrl+C Doesn't Stop the Program"
-- The program now handles `Ctrl+C` correctly using a shutdown event.
-- Ensure you're running the latest optimized version of the script.
+## **❌ How to Stop**
+Press `Ctrl+C` to **exit safely**.
 
 ---
-## License 📝
-This project is **open-source** and licensed under the **MIT License**.
+
+## **📌 Notes**
+- Requires **Admin Privileges** to run.  
+- Works only on **Windows** (since it uses `WinDivert`).  
+- **Ensure WinDivert is correctly installed**; otherwise, the script won't work.  
+- If **firewall rules seem slow**, try running the script **as Administrator**.
 
 ---
-## Author ✨
-Developed by Dev
 
-For any issues or suggestions, feel free to open an issue or contribute! 🚀
+## **📜 License**
+MIT License – Feel free to modify and use!  
 
+---
 
-## Screenshot
-![image](https://github.com/user-attachments/assets/4de4255c-b2d5-4d1b-9ad5-3289e19b25f9)
-
-
+Let me know if you want additional **features or formatting**! 🚀🔥
