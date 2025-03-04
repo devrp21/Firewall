@@ -5,12 +5,14 @@ import queue
 import signal
 import sys
 
+
 # Function to resolve hostname to IP
 def hostname_to_ip(hostname):
     try:
         return socket.gethostbyname(hostname)
     except socket.gaierror:
         return None  # Return None if invalid
+
 
 # Function to resolve IP to hostname
 def ip_to_hostname(ip):
@@ -19,76 +21,103 @@ def ip_to_hostname(ip):
     except socket.herror:
         return "Unknown Host"
 
-# Define blocked IPs and ports
-BLOCKED_IPS = {"192.168.0.102"}  # Default blocked IP
-BLOCKED_PORTS = {80, 443}  # Block HTTP and HTTPS traffic
 
-# Ask for website to block
-website = input("Enter the Website you want to block: ")
-website_ip = hostname_to_ip(website)
+# User input: IPs, Ports, Websites to block
+blocked_ips = set()
+blocked_ports = set()
 
-if website_ip:
-    print(f"{website}'s IP: {website_ip} will be blocked")
-    BLOCKED_IPS.add(website_ip)
-else:
-    print(f"Invalid website: {website}")
+# Get IPs
+ip_input = input("Enter IP addresses to block (comma-separated, leave empty to skip): ").strip()
+if ip_input:
+    blocked_ips.update(ip.strip() for ip in ip_input.split(",") if ip.strip())
+
+# Get Ports
+port_input = input("Enter Ports to block (comma-separated, leave empty to skip): ").strip()
+if port_input:
+    try:
+        blocked_ports.update(int(port.strip()) for port in port_input.split(",") if port.strip().isdigit())
+    except ValueError:
+        print("Invalid port detected. Skipping invalid entries.")
+
+# Get Websites
+website_input = input("Enter Websites to block (comma-separated, leave empty to skip): ").strip()
+if website_input:
+    websites = [w.strip() for w in website_input.split(",") if w.strip()]
+    for website in websites:
+        ip = hostname_to_ip(website)
+        if ip:
+            print(f"Blocking {website} ({ip})")
+            blocked_ips.add(ip)
+        else:
+            print(f"Invalid website: {website}")
 
 # Create a valid filter string
-FILTER = "(tcp.DstPort == 80 or tcp.DstPort == 443)"
-for ip in BLOCKED_IPS:
-    FILTER += f" or ip.DstAddr == {ip}"
+FILTER = " or ".join([f"ip.DstAddr == {ip}" for ip in blocked_ips])
+FILTER += " or " if FILTER else ""  # Add OR if both IPs and Ports exist
+FILTER += " or ".join([f"tcp.DstPort == {port}" for port in blocked_ports])
 
-# Packet queue for multithreading
+if not FILTER:
+    print("No valid filters set. Exiting.")
+    sys.exit(0)
+
+FILTER = f"({FILTER})"  # Wrap the filter expression
+
+print(f"Active Filter: {FILTER}")
+
+# Packet queue for threading
 packet_queue = queue.Queue()
-shutdown_event = threading.Event()  # Used to signal threads to exit
+exit_event = threading.Event()  # Event to handle shutdown
 
 
 # Function to capture packets
-def capture_packets():
-    with pydivert.WinDivert(FILTER) as w:
-        print("[*] Packet capturing started...")
+def capture_packets(w):
+    try:
         for packet in w:
-            if shutdown_event.is_set():
-                break  # Exit loop when shutdown is signaled
+            if exit_event.is_set():
+                break
             packet_queue.put(packet)  # Add packet to queue
+    except KeyboardInterrupt:
+        pass  # Ignore Ctrl+C interruptions
 
 
 # Function to process packets
-def handle_packets():
-    with pydivert.WinDivert(FILTER) as w:
-        print("[*] Packet processing started...")
-        while not shutdown_event.is_set():
+def handle_packets(w):
+    try:
+        while not exit_event.is_set():
             try:
-                packet = packet_queue.get(timeout=1)  # Avoids blocking indefinitely
+                packet = packet_queue.get(timeout=1)  # Wait max 1 sec for a packet
             except queue.Empty:
-                continue  # Skip iteration if queue is empty
+                continue  # No packet, continue loop
 
-            if packet.dst_addr in BLOCKED_IPS or packet.dst_port in BLOCKED_PORTS:
+            if packet.dst_addr in blocked_ips or packet.dst_port in blocked_ports:
                 print(f"Blocked: {packet.src_addr}:{packet.src_port} -> {packet.dst_addr}:{packet.dst_port} "
                       f"(Hostname: {ip_to_hostname(packet.dst_addr)})")
                 # Do NOT send the packet to drop it
             else:
                 w.send(packet)  # Forward allowed packets
 
-            packet_queue.task_done()  # Mark as done
+            packet_queue.task_done()  # Mark as processed
+    except KeyboardInterrupt:
+        pass  # Handle Ctrl+C cleanly
 
 
-# Signal handler for Ctrl+C
+# Handle Ctrl+C to exit gracefully
 def signal_handler(sig, frame):
-    print("\n[!] Ctrl+C detected. Stopping...")
-    shutdown_event.set()  # Notify all threads to exit
-    sys.exit(0)  # Exit program
+    print("\n[+] Stopping firewall... Please wait.")
+    exit_event.set()  # Signal threads to exit
+    sys.exit(0)
 
-# Attach signal handler for graceful shutdown
+
+# Register Ctrl+C signal
 signal.signal(signal.SIGINT, signal_handler)
 
-# Start threads
-capture_thread = threading.Thread(target=capture_packets, daemon=True)
-handler_thread = threading.Thread(target=handle_packets, daemon=True)
+# Start the firewall
+with pydivert.WinDivert(FILTER) as w:
+    capture_thread = threading.Thread(target=capture_packets, args=(w,), daemon=True)
+    handler_thread = threading.Thread(target=handle_packets, args=(w,), daemon=True)
 
-capture_thread.start()
-handler_thread.start()
+    capture_thread.start()
+    handler_thread.start()
 
-# Wait for threads to finish
-capture_thread.join()
-handler_thread.join()
+    capture_thread.join()
+    handler_thread.join()
