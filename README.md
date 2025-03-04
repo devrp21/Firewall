@@ -60,7 +60,12 @@ This project is **open-source** and licensed under the **MIT License**.
 
 ---
 ## Author ✨
-Developed by [Your Name]
+Developed by Dev
 
 For any issues or suggestions, feel free to open an issue or contribute! 🚀
+
+
+## Screenshot
+![image](https://github.com/user-attachments/assets/4de4255c-b2d5-4d1b-9ad5-3289e19b25f9)
+
 
