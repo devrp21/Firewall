@@ -1,7 +1,3 @@
-Here's an updated **README** for your project:  
-
----
-
 ## **🛡️ Custom Firewall & Packet Sniffer**
 A simple Python-based **firewall and packet sniffer** using **WinDivert** that allows you to:  
 ✅ **Block specific IPs**  
@@ -79,4 +75,3 @@ MIT License – Feel free to modify and use!
 
 ---
 
-Let me know if you want additional **features or formatting**! 🚀🔥
